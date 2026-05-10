@@ -156,7 +156,7 @@ class _Header extends StatelessWidget {
           ),
           const SizedBox(height: 14),
           Text(
-            '${context.tr('finance_budget')}: ${fmt.format(stats.budget.round())} ${stats.currencySymbol}',
+            '${context.tr('home_balance')}: ${fmt.format(stats.currentBalance.round())} ${stats.currencySymbol}',
             style: TextStyle(
               color: Colors.white.withOpacity(0.85),
               fontWeight: FontWeight.w600,
@@ -174,7 +174,7 @@ class _Header extends StatelessWidget {
                 ),
               ),
               FractionallySizedBox(
-                widthFactor: stats.budgetRatio,
+                widthFactor: stats.balanceUsedRatio,
                 child: Container(
                   height: 8,
                   decoration: BoxDecoration(
@@ -197,7 +197,7 @@ class _Header extends StatelessWidget {
           Align(
             alignment: Alignment.centerRight,
             child: Text(
-              '${(stats.budgetRatio * 100).round()}%',
+              '${(stats.balanceUsedRatio * 100).round()}%',
               style: const TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.w800,
@@ -486,6 +486,8 @@ class _ExpenseTile extends StatelessWidget {
         NumberFormat.decimalPattern(Localizations.localeOf(context).languageCode);
     return SoftCard(
       padding: const EdgeInsets.all(14),
+      onTap: () => _openEdit(context),
+      onLongPress: () => _openEdit(context),
       child: Row(
         children: <Widget>[
           Container(
@@ -535,6 +537,15 @@ class _ExpenseTile extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+
+  void _openEdit(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (BuildContext _) => AddExpenseSheet(existing: item),
     );
   }
 }

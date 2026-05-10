@@ -281,7 +281,9 @@ class _HabitCard extends ConsumerWidget {
         7, (int i) => DateTime(now.year, now.month, now.day)
             .subtract(Duration(days: 6 - i)));
 
-    return SoftCard(
+    return GestureDetector(
+      onLongPress: () => _openEdit(context),
+      child: SoftCard(
       padding: const EdgeInsets.all(16),
       onTap: () => ref.read(habitsProvider.notifier).toggleToday(habit.id),
       child: Column(
@@ -395,6 +397,16 @@ class _HabitCard extends ConsumerWidget {
           ),
         ],
       ),
+      ),
+    );
+  }
+
+  void _openEdit(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (BuildContext _) => AddHabitSheet(existing: habit),
     );
   }
 }

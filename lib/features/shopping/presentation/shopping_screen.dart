@@ -10,6 +10,7 @@ import '../../../shared/widgets/glass_card.dart';
 import '../../tasks/presentation/widgets/segmented_filter.dart';
 import '../data/shopping_model.dart';
 import '../providers/shopping_provider.dart';
+import 'widgets/edit_shopping_sheet.dart';
 
 enum _ShopFilter { all, remaining, bought }
 
@@ -211,6 +212,7 @@ class _ShoppingTile extends ConsumerWidget {
       child: SoftCard(
         padding: const EdgeInsets.all(14),
         onTap: () => ref.read(shoppingProvider.notifier).toggle(item.id),
+        onLongPress: () => _openEdit(context, ref),
         child: Row(
           children: <Widget>[
             AnimatedContainer(
@@ -270,7 +272,55 @@ class _ShoppingTile extends ConsumerWidget {
                 ],
               ),
             ),
+            _IconBtn(
+              icon: Icons.edit_rounded,
+              color: AppColors.indigo,
+              onTap: () => _openEdit(context, ref),
+            ),
+            const SizedBox(width: 6),
+            _IconBtn(
+              icon: Icons.delete_outline_rounded,
+              color: AppColors.rose,
+              onTap: () =>
+                  ref.read(shoppingProvider.notifier).remove(item.id),
+            ),
           ],
+        ),
+      ),
+    );
+  }
+
+  void _openEdit(BuildContext context, WidgetRef ref) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (BuildContext _) => EditShoppingSheet(existing: item),
+    );
+  }
+}
+
+class _IconBtn extends StatelessWidget {
+  const _IconBtn({
+    required this.icon,
+    required this.color,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final Color color;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(10),
+        child: Padding(
+          padding: const EdgeInsets.all(6),
+          child: Icon(icon, color: color, size: 20),
         ),
       ),
     );

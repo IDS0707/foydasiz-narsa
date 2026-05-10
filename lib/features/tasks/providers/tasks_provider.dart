@@ -35,8 +35,18 @@ class TasksNotifier extends StateNotifier<List<TaskItem>> {
     await _persist();
   }
 
+  Future<void> update(TaskItem next) async {
+    state = state.map((TaskItem t) => t.id == next.id ? next : t).toList();
+    await _persist();
+  }
+
   Future<void> remove(String id) async {
     state = state.where((TaskItem t) => t.id != id).toList();
+    await _persist();
+  }
+
+  Future<void> replaceAll(List<TaskItem> next) async {
+    state = next;
     await _persist();
   }
 }

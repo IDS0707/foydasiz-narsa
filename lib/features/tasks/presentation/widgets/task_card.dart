@@ -7,6 +7,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/widgets/glass_card.dart';
 import '../../data/task_model.dart';
 import '../../providers/tasks_provider.dart';
+import 'add_task_sheet.dart';
 
 class TaskCard extends ConsumerWidget {
   const TaskCard({super.key, required this.task});
@@ -32,10 +33,12 @@ class TaskCard extends ConsumerWidget {
         ),
         child: const Icon(Icons.delete_rounded, color: Colors.white),
       ),
-      child: SoftCard(
-        padding: const EdgeInsets.all(14),
-        onTap: () => ref.read(tasksProvider.notifier).toggle(task.id),
-        child: Row(
+      child: GestureDetector(
+        onLongPress: () => _openEdit(context),
+        child: SoftCard(
+          padding: const EdgeInsets.all(14),
+          onTap: () => ref.read(tasksProvider.notifier).toggle(task.id),
+          child: Row(
           children: <Widget>[
             _PriorityCheckbox(
               done: task.done,
@@ -98,7 +101,17 @@ class TaskCard extends ConsumerWidget {
             ),
           ],
         ),
+        ),
       ),
+    );
+  }
+
+  void _openEdit(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (BuildContext _) => AddTaskSheet(existing: task),
     );
   }
 }

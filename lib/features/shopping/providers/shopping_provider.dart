@@ -26,6 +26,12 @@ class ShoppingNotifier extends StateNotifier<List<ShoppingItem>> {
     await _persist();
   }
 
+  Future<void> update(ShoppingItem next) async {
+    state =
+        state.map((ShoppingItem i) => i.id == next.id ? next : i).toList();
+    await _persist();
+  }
+
   Future<void> remove(String id) async {
     state = state.where((ShoppingItem i) => i.id != id).toList();
     await _persist();
@@ -36,6 +42,11 @@ class ShoppingNotifier extends StateNotifier<List<ShoppingItem>> {
         .map((ShoppingItem i) =>
             i.id == id ? i.copyWith(bought: !i.bought) : i)
         .toList();
+    await _persist();
+  }
+
+  Future<void> replaceAll(List<ShoppingItem> next) async {
+    state = next;
     await _persist();
   }
 }

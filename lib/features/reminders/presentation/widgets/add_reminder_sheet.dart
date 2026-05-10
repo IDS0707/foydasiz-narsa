@@ -7,18 +7,26 @@ import '../../data/reminder_model.dart';
 import '../../providers/reminders_provider.dart';
 
 class AddReminderSheet extends ConsumerStatefulWidget {
-  const AddReminderSheet({super.key});
+  const AddReminderSheet({super.key, this.existing});
+  final ReminderItem? existing;
 
   @override
   ConsumerState<AddReminderSheet> createState() => _AddReminderSheetState();
 }
 
 class _AddReminderSheetState extends ConsumerState<AddReminderSheet> {
-  final TextEditingController _label = TextEditingController();
-  TimeOfDay _time = TimeOfDay.now();
-  DateTime _date = DateTime.now();
-  ReminderRepeat _repeat = ReminderRepeat.daily;
-  ReminderCategory _category = ReminderCategory.general;
+  late final TextEditingController _label =
+      TextEditingController(text: widget.existing?.label ?? '');
+  late TimeOfDay _time = widget.existing?.time ?? TimeOfDay.now();
+  late DateTime _date = widget.existing?.date ?? DateTime.now();
+  late ReminderRepeat _repeat =
+      widget.existing?.repeat ?? ReminderRepeat.daily;
+  late ReminderCategory _category =
+      widget.existing?.category ?? ReminderCategory.general;
+  bool _saving = false;
+  String? _error;
+
+  bool get _isEdit => widget.existing != null;
 
   @override
   void dispose() {
@@ -58,7 +66,9 @@ class _AddReminderSheetState extends ConsumerState<AddReminderSheet> {
                 ),
                 const SizedBox(height: 18),
                 Text(
-                  context.tr('reminders_add'),
+                  _isEdit
+                      ? context.tr('edit_reminder')
+                      : context.tr('reminders_add'),
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
                       fontSize: 22, fontWeight: FontWeight.w800),
                 ),
@@ -173,38 +183,119 @@ class _AddReminderSheetState extends ConsumerState<AddReminderSheet> {
                     );
                   }).toList(),
                 ),
-                const SizedBox(height: 22),
-                SizedBox(
-                  width: double.infinity,
-                  child: GestureDetector(
-                    onTap: _save,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      decoration: BoxDecoration(
-                        gradient: AppColors.primaryGradient,
-                        borderRadius: BorderRadius.circular(18),
-                        boxShadow: <BoxShadow>[
-                          BoxShadow(
-                            color:
-                                AppColors.primary.withValues(alpha: 0.4),
-                            blurRadius: 18,
-                            offset: const Offset(0, 10),
+                if (_error != null) ...<Widget>[
+                  const SizedBox(height: 14),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: AppColors.rose.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                          color: AppColors.rose.withValues(alpha: 0.3)),
+                    ),
+                    child: Row(
+                      children: <Widget>[
+                        const Icon(Icons.error_outline_rounded,
+                            color: AppColors.rose, size: 18),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            _error!,
+                            style: const TextStyle(
+                              color: AppColors.rose,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 13,
+                            ),
                           ),
-                        ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 22),
+                Row(
+                  children: <Widget>[
+                    if (_isEdit) ...<Widget>[
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: _saving ? null : _delete,
+                          child: Container(
+                            padding:
+                                const EdgeInsets.symmetric(vertical: 16),
+                            decoration: BoxDecoration(
+                              color:
+                                  AppColors.rose.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(18),
+                              border: Border.all(
+                                  color: AppColors.rose
+                                      .withValues(alpha: 0.35)),
+                            ),
+                            child: Center(
+                              child: Text(
+                                context.tr('delete'),
+                                style: const TextStyle(
+                                  color: AppColors.rose,
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 15,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
                       ),
-                      child: Center(
-                        child: Text(
-                          context.tr('reminders_save'),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w800,
-                            fontSize: 15,
-                            letterSpacing: 0.4,
+                      const SizedBox(width: 10),
+                    ],
+                    Expanded(
+                      flex: _isEdit ? 2 : 1,
+                      child: GestureDetector(
+                        onTap: _saving ? null : _save,
+                        child: AnimatedOpacity(
+                          duration: const Duration(milliseconds: 180),
+                          opacity: _saving ? 0.6 : 1,
+                          child: Container(
+                            padding:
+                                const EdgeInsets.symmetric(vertical: 16),
+                            decoration: BoxDecoration(
+                              gradient: AppColors.primaryGradient,
+                              borderRadius: BorderRadius.circular(18),
+                              boxShadow: <BoxShadow>[
+                                BoxShadow(
+                                  color: AppColors.primary
+                                      .withValues(alpha: 0.4),
+                                  blurRadius: 18,
+                                  offset: const Offset(0, 10),
+                                ),
+                              ],
+                            ),
+                            child: Center(
+                              child: _saving
+                                  ? const SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2.4,
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                                Colors.white),
+                                      ),
+                                    )
+                                  : Text(
+                                      context.tr('reminders_save'),
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: 15,
+                                        letterSpacing: 0.4,
+                                      ),
+                                    ),
+                            ),
                           ),
                         ),
                       ),
                     ),
-                  ),
+                  ],
                 ),
               ],
             ),
@@ -232,21 +323,87 @@ class _AddReminderSheetState extends ConsumerState<AddReminderSheet> {
     if (d != null) setState(() => _date = d);
   }
 
-  void _save() {
-    if (_label.text.trim().isEmpty) {
-      Navigator.of(context).pop();
+  Future<void> _save() async {
+    if (_saving) return;
+
+    final String label = _label.text.trim();
+    if (label.isEmpty) {
+      setState(() => _error = context.tr('reminders_label_hint'));
       return;
     }
-    final ReminderItem r = ReminderItem(
-      id: 'r${DateTime.now().microsecondsSinceEpoch}',
-      label: _label.text.trim(),
-      time: _time,
-      repeat: _repeat,
-      category: _category,
-      date: _date,
-      subtitle: _subtitleFor(),
+
+    setState(() {
+      _error = null;
+      _saving = true;
+    });
+
+    final ReminderItem r = _isEdit
+        ? widget.existing!.copyWith(
+            label: label,
+            time: _time,
+            repeat: _repeat,
+            category: _category,
+            date: _date,
+            subtitle: _subtitleFor(),
+          )
+        : ReminderItem(
+            id: 'r${DateTime.now().microsecondsSinceEpoch}',
+            label: label,
+            time: _time,
+            repeat: _repeat,
+            category: _category,
+            date: _date,
+            subtitle: _subtitleFor(),
+          );
+
+    try {
+      if (_isEdit) {
+        await ref.read(remindersProvider.notifier).update(r);
+      } else {
+        await ref.read(remindersProvider.notifier).add(r);
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _saving = false;
+        _error = e.toString();
+      });
+      return;
+    }
+
+    if (!mounted) return;
+    Navigator.of(context).pop();
+    final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
+    messenger.hideCurrentSnackBar();
+    messenger.showSnackBar(
+      SnackBar(
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: AppColors.emerald,
+        content: Row(
+          children: <Widget>[
+            const Icon(Icons.check_circle_rounded,
+                color: Colors.white, size: 20),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                '${r.label} · ${r.time.hour.toString().padLeft(2, '0')}:${r.time.minute.toString().padLeft(2, '0')}',
+                style: const TextStyle(
+                    color: Colors.white, fontWeight: FontWeight.w700),
+              ),
+            ),
+          ],
+        ),
+        duration: const Duration(seconds: 2),
+      ),
     );
-    ref.read(remindersProvider.notifier).add(r);
+  }
+
+  Future<void> _delete() async {
+    if (!_isEdit) return;
+    await ref
+        .read(remindersProvider.notifier)
+        .remove(widget.existing!.id);
+    if (!mounted) return;
     Navigator.of(context).pop();
   }
 

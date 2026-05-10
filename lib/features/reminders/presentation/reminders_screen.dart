@@ -22,10 +22,36 @@ class RemindersScreen extends ConsumerStatefulWidget {
 class _RemindersScreenState extends ConsumerState<RemindersScreen> {
   bool _askedPermission = false;
 
-  Future<void> _ensurePermission() async {
-    if (_askedPermission) return;
+  Future<bool> _ensurePermission() async {
+    if (_askedPermission) return true;
     _askedPermission = true;
-    await NotificationService.instance.requestPermission();
+    final NotificationPermissionResult r = await NotificationService.instance
+        .requestPermission();
+    if (!mounted) return r.granted;
+    if (!r.granted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: AppColors.rose,
+          content: Row(
+            children: <Widget>[
+              const Icon(Icons.notifications_off_rounded,
+                  color: Colors.white, size: 20),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  context.tr('notif_permission_denied'),
+                  style: const TextStyle(
+                      color: Colors.white, fontWeight: FontWeight.w700),
+                ),
+              ),
+            ],
+          ),
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
+    return r.granted;
   }
 
   @override
@@ -70,7 +96,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
     );
   }
 
-  Future<void> _openAdd(BuildContext context) async {
+  Future<void> _openAdd(BuildContext _) async {
     await _ensurePermission();
     if (!mounted) return;
     showModalBottomSheet<void>(
@@ -105,7 +131,10 @@ class _ReminderCard extends ConsumerWidget {
       ),
       onDismissed: (_) =>
           ref.read(remindersProvider.notifier).remove(reminder.id),
-      child: SoftCard(
+      child: GestureDetector(
+        onLongPress: () => _openEdit(context),
+        onTap: () => _openEdit(context),
+        child: SoftCard(
         padding: const EdgeInsets.all(16),
         child: Row(
           children: <Widget>[
@@ -187,7 +216,17 @@ class _ReminderCard extends ConsumerWidget {
             ),
           ],
         ),
+        ),
       ),
+    );
+  }
+
+  void _openEdit(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (BuildContext _) => AddReminderSheet(existing: reminder),
     );
   }
 }

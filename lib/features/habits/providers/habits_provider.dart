@@ -26,8 +26,18 @@ class HabitsNotifier extends StateNotifier<List<HabitItem>> {
     await _persist();
   }
 
+  Future<void> update(HabitItem next) async {
+    state = state.map((HabitItem h) => h.id == next.id ? next : h).toList();
+    await _persist();
+  }
+
   Future<void> remove(String id) async {
     state = state.where((HabitItem h) => h.id != id).toList();
+    await _persist();
+  }
+
+  Future<void> replaceAll(List<HabitItem> next) async {
+    state = next;
     await _persist();
   }
 

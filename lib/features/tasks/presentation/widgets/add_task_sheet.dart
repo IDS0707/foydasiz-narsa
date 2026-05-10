@@ -7,18 +7,28 @@ import '../../data/task_model.dart';
 import '../../providers/tasks_provider.dart';
 
 class AddTaskSheet extends ConsumerStatefulWidget {
-  const AddTaskSheet({super.key});
+  const AddTaskSheet({super.key, this.existing});
+  final TaskItem? existing;
 
   @override
   ConsumerState<AddTaskSheet> createState() => _AddTaskSheetState();
 }
 
 class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
-  final TextEditingController _title = TextEditingController();
-  final TextEditingController _notes = TextEditingController();
-  TaskPriority _priority = TaskPriority.medium;
-  TimeOfDay _time = TimeOfDay.now();
-  DateTime _date = DateTime.now();
+  late final TextEditingController _title =
+      TextEditingController(text: widget.existing?.title ?? '');
+  late final TextEditingController _notes =
+      TextEditingController(text: widget.existing?.notes ?? '');
+  late TaskPriority _priority =
+      widget.existing?.priority ?? TaskPriority.medium;
+  late TimeOfDay _time = widget.existing == null
+      ? TimeOfDay.now()
+      : TimeOfDay(
+          hour: widget.existing!.dueAt.hour,
+          minute: widget.existing!.dueAt.minute);
+  late DateTime _date = widget.existing?.dueAt ?? DateTime.now();
+
+  bool get _isEdit => widget.existing != null;
 
   @override
   void dispose() {
@@ -59,7 +69,9 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
               ),
               const SizedBox(height: 18),
               Text(
-                context.tr('tasks_new_task'),
+                _isEdit
+                    ? context.tr('edit_task')
+                    : context.tr('tasks_new_task'),
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
                     fontSize: 22, fontWeight: FontWeight.w800),
               ),
@@ -146,42 +158,79 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
                 }).toList(),
               ),
               const SizedBox(height: 22),
-              SizedBox(
-                width: double.infinity,
-                child: GestureDetector(
-                  onTap: _save,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    decoration: BoxDecoration(
-                      gradient: AppColors.primaryGradient,
-                      borderRadius: BorderRadius.circular(18),
-                      boxShadow: <BoxShadow>[
-                        BoxShadow(
-                          color: AppColors.primary.withOpacity(0.4),
-                          blurRadius: 18,
-                          offset: const Offset(0, 10),
+              Row(
+                children: <Widget>[
+                  if (_isEdit) ...<Widget>[
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: _delete,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          decoration: BoxDecoration(
+                            color: AppColors.rose.withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(18),
+                            border: Border.all(
+                                color: AppColors.rose.withOpacity(0.35)),
+                          ),
+                          child: Center(
+                            child: Text(
+                              context.tr('delete'),
+                              style: const TextStyle(
+                                color: AppColors.rose,
+                                fontWeight: FontWeight.w800,
+                                fontSize: 15,
+                              ),
+                            ),
+                          ),
                         ),
-                      ],
+                      ),
                     ),
-                    child: Center(
-                      child: Text(
-                        context.tr('save'),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w800,
-                          fontSize: 15,
-                          letterSpacing: 0.4,
+                    const SizedBox(width: 10),
+                  ],
+                  Expanded(
+                    flex: _isEdit ? 2 : 1,
+                    child: GestureDetector(
+                      onTap: _save,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        decoration: BoxDecoration(
+                          gradient: AppColors.primaryGradient,
+                          borderRadius: BorderRadius.circular(18),
+                          boxShadow: <BoxShadow>[
+                            BoxShadow(
+                              color: AppColors.primary.withOpacity(0.4),
+                              blurRadius: 18,
+                              offset: const Offset(0, 10),
+                            ),
+                          ],
+                        ),
+                        child: Center(
+                          child: Text(
+                            context.tr('save'),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 15,
+                              letterSpacing: 0.4,
+                            ),
+                          ),
                         ),
                       ),
                     ),
                   ),
-                ),
+                ],
               ),
             ],
           ),
         ),
       ),
     );
+  }
+
+  void _delete() {
+    if (!_isEdit) return;
+    ref.read(tasksProvider.notifier).remove(widget.existing!.id);
+    Navigator.of(context).pop();
   }
 
   Future<void> _pickDate() async {
@@ -209,15 +258,25 @@ class _AddTaskSheetState extends ConsumerState<AddTaskSheet> {
     }
     final DateTime due = DateTime(
         _date.year, _date.month, _date.day, _time.hour, _time.minute);
-    ref.read(tasksProvider.notifier).add(
-          TaskItem(
-            id: 'u${DateTime.now().microsecondsSinceEpoch}',
-            title: _title.text.trim(),
-            notes: _notes.text.trim(),
-            priority: _priority,
-            dueAt: due,
-          ),
-        );
+    if (_isEdit) {
+      final TaskItem next = widget.existing!.copyWith(
+        title: _title.text.trim(),
+        notes: _notes.text.trim(),
+        priority: _priority,
+        dueAt: due,
+      );
+      ref.read(tasksProvider.notifier).update(next);
+    } else {
+      ref.read(tasksProvider.notifier).add(
+            TaskItem(
+              id: 'u${DateTime.now().microsecondsSinceEpoch}',
+              title: _title.text.trim(),
+              notes: _notes.text.trim(),
+              priority: _priority,
+              dueAt: due,
+            ),
+          );
+    }
     Navigator.of(context).pop();
   }
 }

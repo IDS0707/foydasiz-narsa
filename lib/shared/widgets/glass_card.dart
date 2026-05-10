@@ -69,6 +69,7 @@ class SoftCard extends StatelessWidget {
     this.borderRadius = 24,
     this.color,
     this.onTap,
+    this.onLongPress,
   });
 
   final Widget child;
@@ -76,6 +77,7 @@ class SoftCard extends StatelessWidget {
   final double borderRadius;
   final Color? color;
   final VoidCallback? onTap;
+  final VoidCallback? onLongPress;
 
   @override
   Widget build(BuildContext context) {
@@ -86,6 +88,7 @@ class SoftCard extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
+        onLongPress: onLongPress,
         borderRadius: BorderRadius.circular(borderRadius),
         child: Ink(
           padding: padding,

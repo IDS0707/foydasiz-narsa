@@ -27,7 +27,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   // Step 2: money
   String _currency = 'USD';
-  final TextEditingController _income = TextEditingController();
   final TextEditingController _balance = TextEditingController();
 
   // Step 3: goals
@@ -44,7 +43,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     _pc.dispose();
     _name.dispose();
     _age.dispose();
-    _income.dispose();
     _balance.dispose();
     super.dispose();
   }
@@ -56,7 +54,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       case 1:
         return _name.text.trim().isNotEmpty;
       case 2:
-        return double.tryParse(_income.text.replaceAll(',', '.')) != null;
+        // Balance can be 0 — only require a parseable number.
+        final String raw = _balance.text.trim().replaceAll(',', '.');
+        if (raw.isEmpty) return true;
+        return double.tryParse(raw) != null;
       case 3:
         return _goals.isNotEmpty;
       case 4:
@@ -94,8 +95,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       name: _name.text.trim().isEmpty ? 'Friend' : _name.text.trim(),
       age: int.tryParse(_age.text.trim()) ?? 0,
       currencyCode: _currency,
-      monthlyIncome:
-          double.tryParse(_income.text.replaceAll(',', '.')) ?? 0,
       currentBalance:
           double.tryParse(_balance.text.replaceAll(',', '.')) ?? 0,
       goals: _goals.toList(),
@@ -150,7 +149,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                       _StepMoney(
                         currency: _currency,
                         onCurrency: (String c) => setState(() => _currency = c),
-                        income: _income,
                         balance: _balance,
                         onChanged: () => setState(() {}),
                       ),
@@ -516,13 +514,11 @@ class _StepMoney extends StatelessWidget {
   const _StepMoney({
     required this.currency,
     required this.onCurrency,
-    required this.income,
     required this.balance,
     required this.onChanged,
   });
   final String currency;
   final ValueChanged<String> onCurrency;
-  final TextEditingController income;
   final TextEditingController balance;
   final VoidCallback onChanged;
 
@@ -552,23 +548,6 @@ class _StepMoney extends StatelessWidget {
                 .toList(),
           ),
           const SizedBox(height: 18),
-          TextField(
-            controller: income,
-            onChanged: (_) => onChanged(),
-            keyboardType:
-                const TextInputType.numberWithOptions(decimal: true),
-            inputFormatters: <TextInputFormatter>[
-              FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
-            ],
-            decoration: InputDecoration(
-              hintText: context.tr('onb_income_hint'),
-              prefixIcon: const Icon(Icons.payments_outlined),
-              suffixText: CurrencyOption.byCode(currency).symbol,
-            ),
-            style:
-                const TextStyle(fontSize: 19, fontWeight: FontWeight.w800),
-          ),
-          const SizedBox(height: 12),
           TextField(
             controller: balance,
             onChanged: (_) => onChanged(),

@@ -28,8 +28,20 @@ class FinanceNotifier extends StateNotifier<List<ExpenseItem>> {
     await _persist();
   }
 
+  Future<void> update(ExpenseItem next) async {
+    state = state
+        .map((ExpenseItem e) => e.id == next.id ? next : e)
+        .toList();
+    await _persist();
+  }
+
   Future<void> remove(String id) async {
     state = state.where((ExpenseItem e) => e.id != id).toList();
+    await _persist();
+  }
+
+  Future<void> replaceAll(List<ExpenseItem> next) async {
+    state = next;
     await _persist();
   }
 }
@@ -81,20 +93,22 @@ final Provider<FinanceStats> financeStatsProvider =
         .fold<double>(0, (double sum, ExpenseItem e) => sum + e.amount);
   });
 
-  final double income = profile?.monthlyIncome ?? 0;
-  final double balance = profile?.currentBalance ?? 0;
-  // Budget = monthly income (sensible default). Falls back to spent so the
-  // bar always renders for first-time users without an income set.
-  final double budget = income > 0 ? income : (monthTotal > 0 ? monthTotal : 1000);
+  final double startingBalance = profile?.currentBalance ?? 0;
+  // Live balance = starting balance minus everything spent so far
+  // (includes prior months — keeps the dashboard honest as the user logs).
+  final double totalSpentEver = all
+      .where((ExpenseItem e) => !e.isIncome)
+      .fold<double>(0, (double sum, ExpenseItem e) => sum + e.amount);
+  final double currentBalance = startingBalance - totalSpentEver;
 
   return FinanceStats(
     monthTotal: monthTotal,
     todayTotal: todayTotal,
-    budget: budget,
-    income: income,
-    balance: balance,
+    startingBalance: startingBalance,
+    currentBalance: currentBalance,
     currencyCode: profile?.currencyCode ?? 'USD',
-    currencySymbol: CurrencyOption.byCode(profile?.currencyCode ?? 'USD').symbol,
+    currencySymbol:
+        CurrencyOption.byCode(profile?.currencyCode ?? 'USD').symbol,
     byCategory: byCategory,
     weekly: weekly,
   );
@@ -104,9 +118,8 @@ class FinanceStats {
   const FinanceStats({
     required this.monthTotal,
     required this.todayTotal,
-    required this.budget,
-    required this.income,
-    required this.balance,
+    required this.startingBalance,
+    required this.currentBalance,
     required this.currencyCode,
     required this.currencySymbol,
     required this.byCategory,
@@ -115,19 +128,21 @@ class FinanceStats {
 
   final double monthTotal;
   final double todayTotal;
-  final double budget;
-  final double income;
-  final double balance;
+  // The balance the user entered during onboarding (anchor).
+  final double startingBalance;
+  // Anchor minus everything they've spent since.
+  final double currentBalance;
   final String currencyCode;
   final String currencySymbol;
   final Map<ExpenseCategory, double> byCategory;
   final List<double> weekly;
 
-  double get budgetRatio =>
-      budget == 0 ? 0 : (monthTotal / budget).clamp(0, 1.0);
-  double get budgetLeft => (budget - monthTotal).clamp(0, double.infinity);
-  double get savingsRatio =>
-      income == 0 ? 0 : ((income - monthTotal) / income).clamp(0, 1.0);
-  double get spentPct =>
-      income == 0 ? 0 : (monthTotal / income * 100).clamp(0, 999);
+  /// Fraction of the user's starting balance that has been spent this month.
+  double get balanceUsedRatio => startingBalance == 0
+      ? 0
+      : (monthTotal / startingBalance).clamp(0, 1.0);
+
+  double get balanceLeftPct => startingBalance == 0
+      ? 0
+      : ((currentBalance / startingBalance) * 100).clamp(0, 100);
 }

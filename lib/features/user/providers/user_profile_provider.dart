@@ -38,6 +38,12 @@ class UserProfileController extends StateNotifier<UserProfile?> {
     await _prefs.setString(_profileKey, next.encode());
   }
 
+  /// Persists arbitrary edits without resetting onboarding.
+  Future<void> update(UserProfile next) async {
+    state = next;
+    await _prefs.setString(_profileKey, next.encode());
+  }
+
   Future<void> reset() async {
     state = null;
     await _prefs.remove(_profileKey);

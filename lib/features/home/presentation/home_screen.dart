@@ -309,21 +309,25 @@ class _SmartSummary extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final List<_SummaryLine> lines = <_SummaryLine>[];
-    if (finance.income > 0 && finance.monthTotal > 0) {
+    if (finance.startingBalance > 0 && finance.monthTotal > 0) {
       lines.add(_SummaryLine(
         icon: Icons.payments_rounded,
         gradient: AppColors.indigoGradient,
         text: context
             .tr('home_spent_pct_msg')
-            .replaceAll('{pct}', finance.spentPct.toStringAsFixed(0)),
+            .replaceAll(
+                '{pct}',
+                (finance.balanceUsedRatio * 100)
+                    .toStringAsFixed(0)),
       ));
     }
-    if (finance.income > 0 && finance.savingsRatio > 0) {
+    if (finance.startingBalance > 0 && finance.currentBalance > 0) {
       lines.add(_SummaryLine(
         icon: Icons.savings_rounded,
         gradient: AppColors.emeraldGradient,
-        text: context.tr('home_savings_msg').replaceAll(
-            '{pct}', (finance.savingsRatio * 100).toStringAsFixed(0)),
+        text: context
+            .tr('home_balance_left_msg')
+            .replaceAll('{pct}', finance.balanceLeftPct.toStringAsFixed(0)),
       ));
     }
     if (habits.bestStreak >= 2) {
@@ -604,7 +608,7 @@ class _ExpenseSummaryCard extends StatelessWidget {
           ClipRRect(
             borderRadius: BorderRadius.circular(8),
             child: LinearProgressIndicator(
-              value: stats.budgetRatio,
+              value: stats.balanceUsedRatio,
               minHeight: 6,
               backgroundColor:
                   Theme.of(context).dividerColor.withValues(alpha: 0.5),
@@ -614,7 +618,7 @@ class _ExpenseSummaryCard extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            '${(stats.budgetRatio * 100).round()}% / ${context.tr('finance_budget')}',
+            '${stats.currentBalance.toStringAsFixed(0)} ${stats.currencySymbol} ${context.tr('home_balance_left').toLowerCase()}',
             style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w600,

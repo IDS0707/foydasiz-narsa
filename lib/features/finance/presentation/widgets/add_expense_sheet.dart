@@ -8,17 +8,28 @@ import '../../data/expense_model.dart';
 import '../../providers/finance_provider.dart';
 
 class AddExpenseSheet extends ConsumerStatefulWidget {
-  const AddExpenseSheet({super.key});
+  const AddExpenseSheet({super.key, this.existing});
+  final ExpenseItem? existing;
 
   @override
   ConsumerState<AddExpenseSheet> createState() => _AddExpenseSheetState();
 }
 
 class _AddExpenseSheetState extends ConsumerState<AddExpenseSheet> {
-  final TextEditingController _amount = TextEditingController();
-  final TextEditingController _note = TextEditingController();
-  ExpenseCategory _category = ExpenseCategory.food;
-  bool _isIncome = false;
+  late final TextEditingController _amount = TextEditingController(
+      text: widget.existing == null
+          ? ''
+          : widget.existing!.amount.toStringAsFixed(
+              widget.existing!.amount == widget.existing!.amount.roundToDouble()
+                  ? 0
+                  : 2));
+  late final TextEditingController _note =
+      TextEditingController(text: widget.existing?.note ?? '');
+  late ExpenseCategory _category =
+      widget.existing?.category ?? ExpenseCategory.food;
+  late bool _isIncome = widget.existing?.isIncome ?? false;
+
+  bool get _isEdit => widget.existing != null;
 
   @override
   void dispose() {
@@ -59,7 +70,9 @@ class _AddExpenseSheetState extends ConsumerState<AddExpenseSheet> {
               ),
               const SizedBox(height: 18),
               Text(
-                context.tr('finance_add_expense'),
+                _isEdit
+                    ? context.tr('edit_expense')
+                    : context.tr('finance_add_expense'),
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
                     fontSize: 22, fontWeight: FontWeight.w800),
               ),
@@ -150,36 +163,67 @@ class _AddExpenseSheetState extends ConsumerState<AddExpenseSheet> {
                 }).toList(),
               ),
               const SizedBox(height: 22),
-              SizedBox(
-                width: double.infinity,
-                child: GestureDetector(
-                  onTap: _save,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    decoration: BoxDecoration(
-                      gradient: AppColors.primaryGradient,
-                      borderRadius: BorderRadius.circular(18),
-                      boxShadow: <BoxShadow>[
-                        BoxShadow(
-                          color: AppColors.primary.withOpacity(0.4),
-                          blurRadius: 18,
-                          offset: const Offset(0, 10),
+              Row(
+                children: <Widget>[
+                  if (_isEdit) ...<Widget>[
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: _delete,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          decoration: BoxDecoration(
+                            color: AppColors.rose.withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(18),
+                            border: Border.all(
+                                color: AppColors.rose.withOpacity(0.35)),
+                          ),
+                          child: Center(
+                            child: Text(
+                              context.tr('delete'),
+                              style: const TextStyle(
+                                color: AppColors.rose,
+                                fontWeight: FontWeight.w800,
+                                fontSize: 15,
+                              ),
+                            ),
+                          ),
                         ),
-                      ],
+                      ),
                     ),
-                    child: Center(
-                      child: Text(
-                        context.tr('save'),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w800,
-                          fontSize: 15,
-                          letterSpacing: 0.4,
+                    const SizedBox(width: 10),
+                  ],
+                  Expanded(
+                    flex: _isEdit ? 2 : 1,
+                    child: GestureDetector(
+                      onTap: _save,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        decoration: BoxDecoration(
+                          gradient: AppColors.primaryGradient,
+                          borderRadius: BorderRadius.circular(18),
+                          boxShadow: <BoxShadow>[
+                            BoxShadow(
+                              color: AppColors.primary.withOpacity(0.4),
+                              blurRadius: 18,
+                              offset: const Offset(0, 10),
+                            ),
+                          ],
+                        ),
+                        child: Center(
+                          child: Text(
+                            context.tr('save'),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 15,
+                              letterSpacing: 0.4,
+                            ),
+                          ),
                         ),
                       ),
                     ),
                   ),
-                ),
+                ],
               ),
             ],
           ),
@@ -195,15 +239,34 @@ class _AddExpenseSheetState extends ConsumerState<AddExpenseSheet> {
       Navigator.of(context).pop();
       return;
     }
-    ref.read(financeProvider.notifier).add(
-          ExpenseItem(
-            id: 'u${DateTime.now().microsecondsSinceEpoch}',
-            amount: amount,
-            category: _category,
-            note: _note.text.trim(),
-            isIncome: _isIncome,
-          ),
-        );
+    if (_isEdit) {
+      ref.read(financeProvider.notifier).update(
+            ExpenseItem(
+              id: widget.existing!.id,
+              amount: amount,
+              category: _category,
+              note: _note.text.trim(),
+              isIncome: _isIncome,
+              date: widget.existing!.date,
+            ),
+          );
+    } else {
+      ref.read(financeProvider.notifier).add(
+            ExpenseItem(
+              id: 'u${DateTime.now().microsecondsSinceEpoch}',
+              amount: amount,
+              category: _category,
+              note: _note.text.trim(),
+              isIncome: _isIncome,
+            ),
+          );
+    }
+    Navigator.of(context).pop();
+  }
+
+  void _delete() {
+    if (!_isEdit) return;
+    ref.read(financeProvider.notifier).remove(widget.existing!.id);
     Navigator.of(context).pop();
   }
 }

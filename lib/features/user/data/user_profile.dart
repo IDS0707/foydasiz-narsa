@@ -5,7 +5,6 @@ class UserProfile {
     required this.name,
     required this.age,
     required this.currencyCode,
-    required this.monthlyIncome,
     required this.currentBalance,
     required this.goals,
     required this.dailyTaskGoal,
@@ -16,7 +15,6 @@ class UserProfile {
   final String name;
   final int age;
   final String currencyCode; // 'USD', 'UZS', 'RUB', 'EUR'
-  final double monthlyIncome;
   final double currentBalance;
   final List<String> goals; // localization keys, e.g. 'goal_save_money'
   final int dailyTaskGoal;
@@ -27,7 +25,6 @@ class UserProfile {
     String? name,
     int? age,
     String? currencyCode,
-    double? monthlyIncome,
     double? currentBalance,
     List<String>? goals,
     int? dailyTaskGoal,
@@ -37,7 +34,6 @@ class UserProfile {
       name: name ?? this.name,
       age: age ?? this.age,
       currencyCode: currencyCode ?? this.currencyCode,
-      monthlyIncome: monthlyIncome ?? this.monthlyIncome,
       currentBalance: currentBalance ?? this.currentBalance,
       goals: goals ?? this.goals,
       dailyTaskGoal: dailyTaskGoal ?? this.dailyTaskGoal,
@@ -50,7 +46,6 @@ class UserProfile {
         'name': name,
         'age': age,
         'currencyCode': currencyCode,
-        'monthlyIncome': monthlyIncome,
         'currentBalance': currentBalance,
         'goals': goals,
         'dailyTaskGoal': dailyTaskGoal,
@@ -62,7 +57,6 @@ class UserProfile {
         name: json['name'] as String? ?? '',
         age: (json['age'] as num?)?.toInt() ?? 0,
         currencyCode: json['currencyCode'] as String? ?? 'USD',
-        monthlyIncome: (json['monthlyIncome'] as num?)?.toDouble() ?? 0,
         currentBalance: (json['currentBalance'] as num?)?.toDouble() ?? 0,
         goals: (json['goals'] as List<dynamic>? ?? <dynamic>[])
             .map((dynamic e) => e.toString())

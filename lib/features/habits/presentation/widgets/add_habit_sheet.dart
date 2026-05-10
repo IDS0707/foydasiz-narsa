@@ -7,16 +7,20 @@ import '../../data/habit_model.dart';
 import '../../providers/habits_provider.dart';
 
 class AddHabitSheet extends ConsumerStatefulWidget {
-  const AddHabitSheet({super.key});
+  const AddHabitSheet({super.key, this.existing});
+  final HabitItem? existing;
 
   @override
   ConsumerState<AddHabitSheet> createState() => _AddHabitSheetState();
 }
 
 class _AddHabitSheetState extends ConsumerState<AddHabitSheet> {
-  final TextEditingController _name = TextEditingController();
-  HabitStyle _style = HabitStyle.workout;
-  int _target = 1;
+  late final TextEditingController _name =
+      TextEditingController(text: widget.existing?.name ?? '');
+  late HabitStyle _style = widget.existing?.style ?? HabitStyle.workout;
+  late int _target = widget.existing?.target ?? 1;
+
+  bool get _isEdit => widget.existing != null;
 
   @override
   void dispose() {
@@ -55,7 +59,9 @@ class _AddHabitSheetState extends ConsumerState<AddHabitSheet> {
               ),
               const SizedBox(height: 18),
               Text(
-                context.tr('habits_new_title'),
+                _isEdit
+                    ? context.tr('edit_habit')
+                    : context.tr('habits_new_title'),
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
                     fontSize: 22, fontWeight: FontWeight.w800),
               ),
@@ -157,36 +163,69 @@ class _AddHabitSheetState extends ConsumerState<AddHabitSheet> {
                 ],
               ),
               const SizedBox(height: 18),
-              SizedBox(
-                width: double.infinity,
-                child: GestureDetector(
-                  onTap: _save,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    decoration: BoxDecoration(
-                      gradient: AppColors.primaryGradient,
-                      borderRadius: BorderRadius.circular(18),
-                      boxShadow: <BoxShadow>[
-                        BoxShadow(
-                          color: AppColors.primary.withValues(alpha: 0.4),
-                          blurRadius: 18,
-                          offset: const Offset(0, 10),
+              Row(
+                children: <Widget>[
+                  if (_isEdit) ...<Widget>[
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: _delete,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          decoration: BoxDecoration(
+                            color: AppColors.rose.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(18),
+                            border: Border.all(
+                                color: AppColors.rose
+                                    .withValues(alpha: 0.35)),
+                          ),
+                          child: Center(
+                            child: Text(
+                              context.tr('delete'),
+                              style: const TextStyle(
+                                color: AppColors.rose,
+                                fontWeight: FontWeight.w800,
+                                fontSize: 15,
+                              ),
+                            ),
+                          ),
                         ),
-                      ],
+                      ),
                     ),
-                    child: Center(
-                      child: Text(
-                        context.tr('save'),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w800,
-                          fontSize: 15,
-                          letterSpacing: 0.4,
+                    const SizedBox(width: 10),
+                  ],
+                  Expanded(
+                    flex: _isEdit ? 2 : 1,
+                    child: GestureDetector(
+                      onTap: _save,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        decoration: BoxDecoration(
+                          gradient: AppColors.primaryGradient,
+                          borderRadius: BorderRadius.circular(18),
+                          boxShadow: <BoxShadow>[
+                            BoxShadow(
+                              color: AppColors.primary
+                                  .withValues(alpha: 0.4),
+                              blurRadius: 18,
+                              offset: const Offset(0, 10),
+                            ),
+                          ],
+                        ),
+                        child: Center(
+                          child: Text(
+                            context.tr('save'),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 15,
+                              letterSpacing: 0.4,
+                            ),
+                          ),
                         ),
                       ),
                     ),
                   ),
-                ),
+                ],
               ),
             ],
           ),
@@ -195,19 +234,34 @@ class _AddHabitSheetState extends ConsumerState<AddHabitSheet> {
     );
   }
 
+  void _delete() {
+    if (!_isEdit) return;
+    ref.read(habitsProvider.notifier).remove(widget.existing!.id);
+    Navigator.of(context).pop();
+  }
+
   void _save() {
     if (_name.text.trim().isEmpty) {
       Navigator.of(context).pop();
       return;
     }
-    ref.read(habitsProvider.notifier).add(
-          HabitItem(
-            id: 'h${DateTime.now().microsecondsSinceEpoch}',
-            name: _name.text.trim(),
-            style: _style,
-            target: _target,
-          ),
-        );
+    if (_isEdit) {
+      final HabitItem next = widget.existing!.copyWith(
+        name: _name.text.trim(),
+        style: _style,
+        target: _target,
+      );
+      ref.read(habitsProvider.notifier).update(next);
+    } else {
+      ref.read(habitsProvider.notifier).add(
+            HabitItem(
+              id: 'h${DateTime.now().microsecondsSinceEpoch}',
+              name: _name.text.trim(),
+              style: _style,
+              target: _target,
+            ),
+          );
+    }
     Navigator.of(context).pop();
   }
 }

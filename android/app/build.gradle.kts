@@ -37,6 +37,17 @@ android {
             // Signing with the debug keys so `flutter build apk --release`
             // produces an installable APK without extra setup.
             signingConfig = signingConfigs.getByName("debug")
+            // R8 strips Gson's generic type info from flutter_local_notifications,
+            // breaking scheduled-notification persistence with "Missing type
+            // parameter". Disable shrinking and ship full classes — the APK
+            // grows ~5 MB but reminders work reliably. ProGuard rules are still
+            // applied as belt-and-suspenders in case Flutter re-enables R8.
+            isMinifyEnabled = false
+            isShrinkResources = false
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro",
+            )
         }
     }
 }
